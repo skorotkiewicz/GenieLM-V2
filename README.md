@@ -1,6 +1,20 @@
 # GenieLM
 
+<!--![Bun](https://img.shields.io/badge/Bun-runtime-000000?style=flat-square&logo=bun&logoColor=white)-->
+![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)
+![TanStack Start](https://img.shields.io/badge/TanStack_Start-framework-FF4154?style=flat-square&logo=tanstack&logoColor=white)
+[![Astryx](https://img.shields.io/badge/Astryx-0.7.17-6D5EF7?style=flat-square)](https://astryx.atmeta.com/)
+![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
+[![SQLite Vector](https://img.shields.io/badge/SQLite_Vector-vector_search-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://github.com/sqliteai/sqlite-vector)
+[![Embedding model](https://img.shields.io/badge/Embedding-multilingual--e5--small-0A7BBB?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/Xenova/multilingual-e5-small)
+
+<p align="center">
+  <img src="docs/genielm-in-action.png" alt="GenieLM answering a launch-planning question with a completed web search" width="1100">
+</p>
+
 GenieLM is a React chat client for OpenAI-compatible models and ChatGPT OAuth. It uses TanStack Start and Astryx. The server streams responses, and the browser stores conversations.
+
+Previous Svelte version: [GenieLM on GitHub](https://github.com/skorotkiewicz/GenieLM).
 
 ## Run locally
 

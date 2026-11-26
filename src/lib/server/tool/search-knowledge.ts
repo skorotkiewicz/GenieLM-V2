@@ -26,7 +26,7 @@ export async function findKnowledge(query: string) {
 
 export const searchPersonalKnowledge = tool({
 	description:
-		"Search the user's private local documents for relevant passages. Use this for questions about their manuals, notes, policies, or personal knowledge, and cite source filenames.",
+		"Search the user's private local documents and saved memories for relevant context. Call at the start of each user turn unless the user asks to skip local knowledge. Cite source filenames when using the results.",
 	inputSchema: jsonSchema<SearchKnowledgeInput>({
 		type: "object",
 		properties: { query: { type: "string", minLength: 1, maxLength: 500 } },

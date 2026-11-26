@@ -34,7 +34,7 @@ export async function saveMemory(title: unknown, content: unknown) {
 			name,
 			`# ${name.slice(9, -3)}\n\n${cleanContent}`,
 		);
-		return `Remembered as ${name}. The user can review or delete it in Account → Knowledge.`;
+		return `Remembered as ${name}. The user can review or delete it in Local knowledge.`;
 	} catch {
 		return "Error: Could not save the memory to local knowledge.";
 	}
@@ -62,7 +62,7 @@ export function forgetSavedMemory(title: unknown) {
 
 export const remember = tool({
 	description:
-		"Save information to the user's private local memory. Call only when the current user explicitly asks you to remember or save something. Reusing a title updates that memory.",
+		"Save a useful fact to the user's private local memory. Use proactively for durable preferences, recurring requirements, and project facts the user states or confirms. Reusing a title updates that memory.",
 	inputSchema: jsonSchema<RememberInput>({
 		type: "object",
 		properties: {

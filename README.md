@@ -33,7 +33,7 @@ hf download Xenova/multilingual-e5-small \
   --local-dir multilingual-e5-small
 ```
 
-Select **Local knowledge** to index or remove Markdown and text documents. The model can search indexed files and save or forget a memory when explicitly asked. The server keeps the documents and embeddings in `knowledge.db`.
+GenieLM checks indexed documents and saved memories at the start of each turn. It can automatically save lasting preferences and project facts for future conversations. Select **Local knowledge** to manage documents and memories, or ask GenieLM to forget a memory. The server keeps the documents, memories, and embeddings in `knowledge.db`.
 
 The optional code tool uses an isolated rootless Podman container. Run `bun run sandbox:build` to build its image.
 

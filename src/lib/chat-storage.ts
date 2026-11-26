@@ -24,7 +24,7 @@ export const defaultProvider: ProviderSettings = {
 	type: "compatible",
 	baseURL: "",
 	compatibleModel: "",
-	oauthModel: "gpt-5.4-mini",
+	oauthModel: "gpt-6-luna",
 	apiKey: "",
 };
 

@@ -4,6 +4,7 @@ import { Dialog, DialogHeader } from "@astryxdesign/core/Dialog";
 import { FileInput } from "@astryxdesign/core/FileInput";
 import { Icon } from "@astryxdesign/core/Icon";
 import { List, ListItem } from "@astryxdesign/core/List";
+import { ScrollableArea } from "@astryxdesign/core/ScrollableArea";
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { VStack } from "@astryxdesign/core/Stack";
 import { Text } from "@astryxdesign/core/Text";
@@ -90,7 +91,7 @@ export function KnowledgeDialog({
 	}
 
 	return (
-		<Dialog isOpen onOpenChange={onOpenChange} width={560}>
+		<Dialog isOpen onOpenChange={onOpenChange} width={560} maxHeight="90dvh">
 			<DialogHeader
 				title="Local knowledge"
 				subtitle="Private Markdown and text documents the model can search."
@@ -113,36 +114,42 @@ export function KnowledgeDialog({
 					</Text>
 				)}
 				{documents.length ? (
-					<List edge="flush" hasDividers>
-						{documents.map((document) => (
-							<ListItem
-								key={document.id}
-								label={document.name}
-								description={`${document.chunks} ${document.chunks === 1 ? "chunk" : "chunks"}`}
-								startContent={<Icon icon={FileText} color="secondary" />}
-								endContent={
-									<Button
-										label={`Delete ${document.name}`}
-										tooltip="Delete document"
-										variant="ghost"
-										size="sm"
-										isIconOnly
-										isDisabled={busy}
-										icon={<Icon icon={Trash2} size="sm" />}
-										onClick={() =>
-											confirm.show({
-												title: `Delete ${document.name}?`,
-												description:
-													"This removes the document and its index from local knowledge.",
-												actionLabel: "Delete",
-												onAction: () => void deleteDocument(document.id),
-											})
-										}
-									/>
-								}
-							/>
-						))}
-					</List>
+					<ScrollableArea
+						axis="block"
+						label="Local knowledge documents"
+						className="knowledge-document-list"
+					>
+						<List edge="flush" hasDividers>
+							{documents.map((document) => (
+								<ListItem
+									key={document.id}
+									label={document.name}
+									description={`${document.chunks} ${document.chunks === 1 ? "chunk" : "chunks"}`}
+									startContent={<Icon icon={FileText} color="secondary" />}
+									endContent={
+										<Button
+											label={`Delete ${document.name}`}
+											tooltip="Delete document"
+											variant="ghost"
+											size="sm"
+											isIconOnly
+											isDisabled={busy}
+											icon={<Icon icon={Trash2} size="sm" />}
+											onClick={() =>
+												confirm.show({
+													title: `Delete ${document.name}?`,
+													description:
+														"This removes the document and its index from local knowledge.",
+													actionLabel: "Delete",
+													onAction: () => void deleteDocument(document.id),
+												})
+											}
+										/>
+									}
+								/>
+							))}
+						</List>
+					</ScrollableArea>
 				) : busy && !status ? (
 					<Spinner label="Loading documents" />
 				) : (

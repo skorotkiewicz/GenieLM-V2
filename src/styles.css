@@ -7,6 +7,10 @@
 @import "@astryxdesign/core/tailwind-theme.css";
 
 @layer app {
+	.knowledge-document-list {
+		max-block-size: 55dvh;
+	}
+
 	.genielm-markdown {
 		min-width: 0;
 		overflow-wrap: anywhere;

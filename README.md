@@ -1,12 +1,17 @@
-# GenieLM
+<p align="center">
+  <img src="public/favicon.svg" alt="GenieLM logo" width="66" height="66">
+</p>
 
-<!--![Bun](https://img.shields.io/badge/Bun-runtime-000000?style=flat-square&logo=bun&logoColor=white)-->
-![React](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)
-![TanStack Start](https://img.shields.io/badge/TanStack_Start-framework-FF4154?style=flat-square&logo=tanstack&logoColor=white)
-[![Astryx](https://img.shields.io/badge/Astryx-0.7.17-6D5EF7?style=flat-square)](https://astryx.atmeta.com/)
-![TypeScript](https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white)
-[![SQLite Vector](https://img.shields.io/badge/SQLite_Vector-vector_search-003B57?style=flat-square&logo=sqlite&logoColor=white)](https://github.com/sqliteai/sqlite-vector)
-[![Embedding model](https://img.shields.io/badge/Embedding-multilingual--e5--small-0A7BBB?style=flat-square&logo=huggingface&logoColor=white)](https://huggingface.co/Xenova/multilingual-e5-small)
+<h1 align="center">GenieLM</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/TanStack_Start-framework-FF4154?style=flat-square&logo=tanstack&logoColor=white" alt="TanStack Start">
+  <a href="https://astryx.atmeta.com/"><img src="https://img.shields.io/badge/Astryx-0.7.17-6D5EF7?style=flat-square" alt="Astryx 0.7.17"></a>
+  <img src="https://img.shields.io/badge/TypeScript-6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 6">
+  <a href="https://github.com/sqliteai/sqlite-vector"><img src="https://img.shields.io/badge/SQLite_Vector-vector_search-003B57?style=flat-square&logo=sqlite&logoColor=white" alt="SQLite Vector"></a>
+  <a href="https://huggingface.co/Xenova/multilingual-e5-small"><img src="https://img.shields.io/badge/Embedding-multilingual--e5--small-0A7BBB?style=flat-square&logo=huggingface&logoColor=white" alt="multilingual-e5-small embedding model"></a>
+</p>
 
 <p align="center">
   <img src="docs/genielm-in-action.png" alt="GenieLM answering a launch-planning question with a completed web search" width="1100">

@@ -22,6 +22,7 @@ Install Bun and Node.js 22.13 or newer.
 
 ```sh
 bun install
+bun run sandbox:build # optional, needed for the code execution tool
 bun run dev
 ```
 

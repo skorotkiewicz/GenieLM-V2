@@ -22,6 +22,7 @@
     "@astryxdesign/cli": "^0.7.17",
     "@astryxdesign/core": "^0.7.17",
     "@astryxdesign/theme-neutral": "^0.7.17",
+    "@heroicons/react": "^2.2.0",
     "@huggingface/transformers": "^4.2.0",
     "@mdit/plugin-katex": "^1.0.1",
     "@openai-oauth/ai-sdk": "2.0.0",

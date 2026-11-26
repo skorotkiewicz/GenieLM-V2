@@ -11,6 +11,7 @@ import {
 	ChatMessageList,
 	ChatMessageMetadata,
 	ChatSendButton,
+	ChatToolCalls,
 } from "@astryxdesign/core/Chat";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
 import { useClipboard } from "@astryxdesign/core/hooks";
@@ -22,7 +23,22 @@ import { useToast } from "@astryxdesign/core/Toast";
 import { ChevronDown, Square, Trash2, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chat, Message } from "#/lib/chat-storage";
+import type { ChatToolCall } from "#/lib/chat-stream";
 import { renderMarkdown } from "#/lib/markdown";
+
+const toolLabels = new Map([
+	["webSearch", "Web search"],
+	["webFetch", "Read webpage"],
+	["getWeather", "Check weather"],
+	["runCode", "Run code"],
+	["searchPersonalKnowledge", "Search local knowledge"],
+	["remember", "Save memory"],
+	["forgetMemory", "Forget memory"],
+]);
+
+function isToolInProgress(call: ChatToolCall) {
+	return call.status === "pending" || call.status === "running";
+}
 
 type ChatPaneProps = {
 	chat: Chat | undefined;
@@ -198,6 +214,10 @@ export function ChatPane({
 				>
 					{messages.map((message, index) => {
 						const isGenerating = isStreaming && index === messages.length - 1;
+						const isThinking =
+							isGenerating &&
+							!message.content &&
+							!message.toolCalls?.some(isToolInProgress);
 						return (
 							<ChatMessage
 								key={message.id}
@@ -215,7 +235,7 @@ export function ChatPane({
 								}
 							>
 								{message.role === "assistant" &&
-									(message.reasoning || (isGenerating && !message.content)) && (
+									(message.reasoning || isThinking) && (
 										<Collapsible
 											defaultIsOpen={false}
 											trigger={
@@ -223,7 +243,7 @@ export function ChatPane({
 													<Text as="p" type="label" color="secondary">
 														Thinking
 													</Text>
-													{isGenerating && !message.content && (
+													{isThinking && (
 														<Spinner
 															size="sm"
 															aria-label="Generating response"
@@ -243,6 +263,22 @@ export function ChatPane({
 											</VStack>
 										</Collapsible>
 									)}
+								{message.role === "assistant" && message.toolCalls && (
+									<ChatToolCalls
+										calls={message.toolCalls.map((call) => {
+											const interrupted =
+												!isGenerating && isToolInProgress(call);
+											return {
+												key: call.id,
+												name: toolLabels.get(call.name) ?? call.name,
+												status: interrupted ? "error" : call.status,
+												errorMessage: interrupted
+													? "Tool call interrupted."
+													: undefined,
+											};
+										})}
+									/>
+								)}
 								{message.content && (
 									<ChatMessageBubble
 										variant={message.role === "assistant" ? "ghost" : "filled"}

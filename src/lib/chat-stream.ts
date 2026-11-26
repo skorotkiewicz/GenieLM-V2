@@ -1,12 +1,71 @@
-export type ChatStreamEvent = {
-	type: "reasoning-delta" | "text-delta";
-	text: string;
+export type ChatToolCall = {
+	id: string;
+	name: string;
+	status: "pending" | "running" | "complete" | "error";
 };
+
+export type ChatStreamEvent =
+	| { type: "reasoning-delta" | "text-delta"; text: string }
+	| { type: "tool-status"; call: ChatToolCall };
 
 type ModelStreamPart = {
 	type: string;
 	text?: string;
+	id?: string;
+	toolCallId?: string;
+	toolName?: string;
+	output?: unknown;
+	preliminary?: boolean;
 };
+
+export function isChatToolCall(value: unknown): value is ChatToolCall {
+	if (!value || typeof value !== "object") return false;
+	const { id, name, status } = value as Partial<ChatToolCall>;
+	return (
+		typeof id === "string" &&
+		typeof name === "string" &&
+		(status === "pending" ||
+			status === "running" ||
+			status === "complete" ||
+			status === "error")
+	);
+}
+
+function toChatStreamEvent(part: ModelStreamPart): ChatStreamEvent | undefined {
+	if (part.type === "reasoning-delta" || part.type === "text-delta") {
+		if (typeof part.text === "string")
+			return { type: part.type, text: part.text };
+		return;
+	}
+
+	const id = part.type === "tool-input-start" ? part.id : part.toolCallId;
+	const name = part.toolName;
+	if (!id || !name) return;
+
+	let status: ChatToolCall["status"];
+	switch (part.type) {
+		case "tool-input-start":
+			status = "pending";
+			break;
+		case "tool-call":
+			status = "running";
+			break;
+		case "tool-result":
+			if (part.preliminary) return;
+			status =
+				typeof part.output === "string" && part.output.startsWith("Error:")
+					? "error"
+					: "complete";
+			break;
+		case "tool-error":
+		case "tool-output-denied":
+			status = "error";
+			break;
+		default:
+			return;
+	}
+	return { type: "tool-status", call: { id, name, status } };
+}
 
 export function createChatStreamResponse(
 	source: AsyncIterable<ModelStreamPart>,
@@ -16,13 +75,9 @@ export function createChatStreamResponse(
 		async start(controller) {
 			try {
 				for await (const part of source) {
-					if (part.type !== "reasoning-delta" && part.type !== "text-delta")
-						continue;
-					controller.enqueue(
-						encoder.encode(
-							`${JSON.stringify({ type: part.type, text: part.text })}\n`,
-						),
-					);
+					const event = toChatStreamEvent(part);
+					if (event)
+						controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
 				}
 				controller.close();
 			} catch (error) {
@@ -44,15 +99,15 @@ function parseChatStreamEvent(line: string): ChatStreamEvent {
 	if (!event || typeof event !== "object")
 		throw new Error("Invalid chat stream event.");
 
-	const { type, text } = event as Record<string, unknown>;
+	const { type, text, call } = event as Record<string, unknown>;
 	if (
-		(type !== "reasoning-delta" && type !== "text-delta") ||
-		typeof text !== "string"
-	) {
-		throw new Error("Invalid chat stream event.");
-	}
+		(type === "reasoning-delta" || type === "text-delta") &&
+		typeof text === "string"
+	)
+		return { type, text };
+	if (type === "tool-status" && isChatToolCall(call)) return { type, call };
 
-	return { type, text };
+	throw new Error("Invalid chat stream event.");
 }
 
 export async function readChatStream(

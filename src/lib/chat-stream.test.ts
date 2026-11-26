@@ -28,6 +28,75 @@ test("streams reasoning and answer deltas separately", async () => {
 	]);
 });
 
+test("streams tool activity with stable IDs and statuses", async () => {
+	async function* modelStream() {
+		yield { type: "tool-input-start", id: "weather-1", toolName: "getWeather" };
+		yield {
+			type: "tool-call",
+			toolCallId: "weather-1",
+			toolName: "getWeather",
+			input: { location: "Fixture city" },
+		};
+		yield { type: "tool-call", toolCallId: "search-1", toolName: "webSearch" };
+		yield {
+			type: "tool-result",
+			toolCallId: "weather-1",
+			toolName: "getWeather",
+			output: "Partly cloudy",
+			preliminary: true,
+		};
+		yield {
+			type: "tool-result",
+			toolCallId: "weather-1",
+			toolName: "getWeather",
+			output: "Partly cloudy",
+		};
+		yield {
+			type: "tool-result",
+			toolCallId: "search-1",
+			toolName: "webSearch",
+			output: "Error: The search timed out.",
+		};
+		yield { type: "tool-error", toolCallId: "fetch-1", toolName: "webFetch" };
+		yield { type: "text-delta", text: "The weather is partly cloudy." };
+	}
+
+	const response = createChatStreamResponse(modelStream());
+	if (!response.body) throw new Error("Expected a response stream");
+	const events: ChatStreamEvent[] = [];
+	await readChatStream(response.body, (event) => {
+		events.push(event);
+	});
+
+	expect(events).toEqual([
+		{
+			type: "tool-status",
+			call: { id: "weather-1", name: "getWeather", status: "pending" },
+		},
+		{
+			type: "tool-status",
+			call: { id: "weather-1", name: "getWeather", status: "running" },
+		},
+		{
+			type: "tool-status",
+			call: { id: "search-1", name: "webSearch", status: "running" },
+		},
+		{
+			type: "tool-status",
+			call: { id: "weather-1", name: "getWeather", status: "complete" },
+		},
+		{
+			type: "tool-status",
+			call: { id: "search-1", name: "webSearch", status: "error" },
+		},
+		{
+			type: "tool-status",
+			call: { id: "fetch-1", name: "webFetch", status: "error" },
+		},
+		{ type: "text-delta", text: "The weather is partly cloudy." },
+	]);
+});
+
 test("reads events split across network chunks", async () => {
 	const encoder = new TextEncoder();
 	const stream = new ReadableStream<Uint8Array>({

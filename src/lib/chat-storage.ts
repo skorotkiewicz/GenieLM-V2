@@ -1,8 +1,11 @@
+import { type ChatToolCall, isChatToolCall } from "./chat-stream";
+
 export type Message = {
 	id: string;
 	role: "user" | "assistant";
 	content: string;
 	reasoning?: string;
+	toolCalls?: ChatToolCall[];
 };
 
 export type Chat = {
@@ -48,7 +51,11 @@ function isMessage(value: unknown): value is StoredMessage {
 		(message.role === "user" || message.role === "assistant") &&
 		typeof message.content === "string" &&
 		(message.id === undefined || typeof message.id === "string") &&
-		(message.reasoning === undefined || typeof message.reasoning === "string")
+		(message.reasoning === undefined ||
+			typeof message.reasoning === "string") &&
+		(message.toolCalls === undefined ||
+			(Array.isArray(message.toolCalls) &&
+				message.toolCalls.every(isChatToolCall)))
 	);
 }
 

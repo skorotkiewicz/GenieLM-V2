@@ -214,9 +214,18 @@ export function useConversations(
 				});
 				if (!response.ok || !response.body) throw new Error("Request failed");
 				await readChatStream(response.body, (event) => {
-					if (event.type === "reasoning-delta")
+					if (event.type === "tool-status") {
+						const calls = answer.toolCalls ?? [];
+						answer.toolCalls = calls.some((call) => call.id === event.call.id)
+							? calls.map((call) =>
+									call.id === event.call.id ? event.call : call,
+								)
+							: [...calls, event.call];
+					} else if (event.type === "reasoning-delta") {
 						answer.reasoning = (answer.reasoning ?? "") + event.text;
-					else answer.content += event.text;
+					} else {
+						answer.content += event.text;
+					}
 					updateAnswer();
 				});
 				if (!answer.content) throw new Error("Empty response");

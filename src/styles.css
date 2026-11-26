@@ -60,10 +60,27 @@
 		margin: 0 0 var(--spacing-3);
 	}
 
-	.genielm-markdown :where([data-genielm-mermaid] > img) {
-		display: block;
-		max-inline-size: 100%;
+	.genielm-markdown :where([data-genielm-mermaid]:has(> [data-mermaid-viewer]) > pre) {
+		display: none;
+	}
+
+	.genielm-mermaid-viewport {
 		max-block-size: 50dvh;
+		border-radius: var(--radius-inner);
+	}
+
+	.genielm-mermaid-viewport[data-zoomed] {
+		cursor: grab;
+	}
+
+	.genielm-mermaid-viewport[data-zoomed]:active {
+		cursor: grabbing;
+	}
+
+	.genielm-mermaid-viewport > img {
+		display: block;
+		flex: none;
+		max-inline-size: none;
 		block-size: auto;
 		margin-inline: auto;
 	}

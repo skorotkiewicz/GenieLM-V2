@@ -23,6 +23,7 @@ import { useToast } from "@astryxdesign/core/Toast";
 import { useTheme } from "@astryxdesign/core/theme";
 import { ChevronDown, Square, Trash2, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Chat, Message } from "#/lib/chat-storage";
 import type { ChatToolCall } from "#/lib/chat-stream";
 import {
@@ -30,7 +31,9 @@ import {
 	renderChatMarkdown,
 	renderMarkdown,
 } from "#/lib/markdown";
+import type { RenderedMermaid } from "#/lib/mermaid-preview";
 import { ArtifactCard, ArtifactLayout } from "./artifact";
+import { MermaidViewer } from "./mermaid-viewer";
 
 const toolLabels = new Map([
 	["webSearch", "Web search"],
@@ -417,6 +420,15 @@ function MarkdownAnswer({
 	onOpenArtifact?: (artifactId: number) => void;
 }) {
 	const answer = useRef<HTMLElement>(null);
+	const [previews, setPreviews] = useState<
+		{
+			html: string;
+			id: number;
+			target: Element;
+			title: string;
+			image: RenderedMermaid;
+		}[]
+	>([]);
 	const { mode } = useTheme();
 	const canOpenArtifacts = !!onOpenArtifact;
 	const { html, artifacts, diagrams } = useMemo(
@@ -432,15 +444,34 @@ function MarkdownAnswer({
 		if (!article || isStreaming || !diagrams.length) return;
 		const controller = new AbortController();
 		void import("#/lib/mermaid-preview").then(
-			({ renderMermaidPreviews }) => {
-				renderMermaidPreviews(article, diagrams, mode, controller.signal);
+			({ renderMermaidPreview }) => {
+				for (const diagram of diagrams) {
+					const target = article.querySelector(
+						`[data-genielm-mermaid="${diagram.id}"]`,
+					);
+					if (!target) continue;
+					void renderMermaidPreview(
+						diagram.content,
+						mode,
+						controller.signal,
+					).then((image) => {
+						if (!image || controller.signal.aborted || !target.isConnected)
+							return;
+						setPreviews((current) => [
+							...current.filter(
+								(preview) => preview.html === html && preview.id !== diagram.id,
+							),
+							{ html, id: diagram.id, target, title: diagram.title, image },
+						]);
+					});
+				}
 			},
 			() => {
 				// The fallback source remains available if the renderer cannot load.
 			},
 		);
 		return () => controller.abort();
-	}, [diagrams, isStreaming, mode]);
+	}, [diagrams, html, isStreaming, mode]);
 
 	useEffect(() => {
 		const element = answer.current;
@@ -466,6 +497,15 @@ function MarkdownAnswer({
 	return (
 		<VStack gap={2}>
 			{article}
+			{previews.map((preview) =>
+				preview.html === html
+					? createPortal(
+							<MermaidViewer image={preview.image} title={preview.title} />,
+							preview.target,
+							String(preview.id),
+						)
+					: null,
+			)}
 			{artifacts.map((artifact) => (
 				<ArtifactCard
 					key={artifact.id}

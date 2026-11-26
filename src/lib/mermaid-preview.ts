@@ -1,8 +1,13 @@
 import mermaid from "mermaid";
-import type { ChatArtifact } from "./markdown";
 
 let nextId = 0;
 let renderQueue = Promise.resolve();
+
+export type RenderedMermaid = {
+	src: string;
+	width: number;
+	height: number;
+};
 
 function svgWithIntrinsicSize(svg: string) {
 	const root = new DOMParser().parseFromString(
@@ -21,54 +26,56 @@ function svgWithIntrinsicSize(svg: string) {
 	return new XMLSerializer().serializeToString(root);
 }
 
-export function renderMermaidPreviews(
-	article: HTMLElement,
-	diagrams: ChatArtifact[],
+export function renderMermaidPreview(
+	source: string,
 	mode: "light" | "dark",
 	signal: AbortSignal,
-) {
-	for (const diagram of diagrams) {
-		const figure = article.querySelector(
-			`[data-genielm-mermaid="${diagram.id}"]`,
-		);
-		if (!figure) continue;
-
-		// Mermaid shares a configuration across renders, so finish each render
-		// before changing the theme for the next one.
-		renderQueue = renderQueue.then(async () => {
-			if (signal.aborted) return;
-			try {
-				mermaid.initialize({
-					startOnLoad: false,
-					securityLevel: "strict",
-					htmlLabels: false,
-					suppressErrorRendering: true,
-					theme: mode === "dark" ? "dark" : "neutral",
-					secure: [
-						"secure",
-						"securityLevel",
-						"startOnLoad",
-						"maxTextSize",
-						"maxEdges",
-						"htmlLabels",
-						"flowchart",
-						"suppressErrorRendering",
-					],
-				});
-				const { svg } = await mermaid.render(
-					`genielm-diagram-${++nextId}`,
-					diagram.content,
-				);
-				const image = new Image();
-				image.alt = diagram.title;
-				// An SVG loaded as an image has no active script or links.
-				image.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgWithIntrinsicSize(svg))}`;
-				await image.decode();
-				if (!signal.aborted && figure.isConnected)
-					figure.replaceChildren(image);
-			} catch {
-				// Invalid diagrams keep the copyable source rendered by Markdown.
+): Promise<RenderedMermaid | undefined> {
+	// Mermaid shares configuration across renders. Wait for the previous
+	// render before changing its theme.
+	const preview = renderQueue.then(async () => {
+		if (signal.aborted) return;
+		try {
+			mermaid.initialize({
+				startOnLoad: false,
+				securityLevel: "strict",
+				htmlLabels: false,
+				suppressErrorRendering: true,
+				theme: mode === "dark" ? "dark" : "neutral",
+				secure: [
+					"secure",
+					"securityLevel",
+					"startOnLoad",
+					"maxTextSize",
+					"maxEdges",
+					"htmlLabels",
+					"flowchart",
+					"suppressErrorRendering",
+				],
+			});
+			const { svg } = await mermaid.render(
+				`genielm-diagram-${++nextId}`,
+				source,
+			);
+			const image = new Image();
+			// An SVG loaded as an image has no active script or links.
+			image.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svgWithIntrinsicSize(svg))}`;
+			await image.decode();
+			if (
+				!signal.aborted &&
+				image.naturalWidth > 0 &&
+				image.naturalHeight > 0
+			) {
+				return {
+					src: image.src,
+					width: image.naturalWidth,
+					height: image.naturalHeight,
+				};
 			}
-		});
-	}
+		} catch {
+			// Invalid diagrams keep the copyable source rendered by Markdown.
+		}
+	});
+	renderQueue = preview.then(() => {});
+	return preview;
 }

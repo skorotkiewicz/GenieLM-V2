@@ -306,6 +306,9 @@ export function ChatPane({
 								{message.content && (
 									<ChatMessageBubble
 										variant={message.role === "assistant" ? "ghost" : "filled"}
+										data-genielm-answer={
+											message.role === "assistant" ? "" : undefined
+										}
 										metadata={
 											<ChatMessageMetadata
 												footer={

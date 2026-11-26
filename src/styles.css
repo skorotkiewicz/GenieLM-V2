@@ -60,6 +60,11 @@
 		margin: 0 0 var(--spacing-3);
 	}
 
+	[data-genielm-answer]:has([data-mermaid-viewer]) {
+		inline-size: 100%;
+		max-inline-size: 100%;
+	}
+
 	.genielm-markdown :where([data-genielm-mermaid]:has(> [data-mermaid-viewer]) > pre) {
 		display: none;
 	}

@@ -120,13 +120,7 @@ export function MermaidViewer({
 	}
 
 	return (
-		<VStack
-			ref={root}
-			gap={1}
-			width={Math.max(width, 240)}
-			maxWidth="100%"
-			data-mermaid-viewer=""
-		>
+		<VStack ref={root} gap={1} width="100%" data-mermaid-viewer="">
 			<HStack
 				gap={1}
 				hAlign="end"

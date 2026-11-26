@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { renderMarkdown } from "./markdown";
+import { renderChatMarkdown, renderMarkdown } from "./markdown";
 
 test("renders GFM-style content without executing raw HTML", () => {
 	const html = renderMarkdown(
@@ -42,4 +42,49 @@ test("renders old latex fences as KaTeX instead of code", () => {
 
 	expect(html).toContain("class='katex-block'");
 	expect(html).not.toContain("copy-code");
+});
+
+test("turns named Markdown and code fences into artifacts while keeping regular snippets inline", () => {
+	const response = [
+		"Here are the release notes.",
+		"",
+		'````markdown title="Release notes"',
+		"# Changes",
+		"",
+		"```js",
+		"console.log('inside the document');",
+		"```",
+		"```tex",
+		"x = 1",
+		"```",
+		"````",
+		"",
+		'```typescript title="index.ts"',
+		"export const count = 1;",
+		"```",
+		"",
+		"```js",
+		"const example = 42;",
+		"```",
+		"",
+		"```tex",
+		"E = mc^2",
+		"```",
+	].join("\n");
+
+	const { html, artifacts } = renderChatMarkdown(response);
+
+	expect(artifacts.map(({ title, kind }) => ({ title, kind }))).toEqual([
+		{ title: "Release notes", kind: "document" },
+		{ title: "index.ts", kind: "code" },
+		{ title: "Code block 3", kind: "code" },
+	]);
+	expect(artifacts[0].content).toContain("```js");
+	expect(artifacts[0].content).toContain("```tex");
+	expect(artifacts[1].content).toBe("export const count = 1;\n");
+	expect(html).toContain("Here are the release notes.");
+	expect(html).toContain("const</span> example");
+	expect(html).toContain("katex-block");
+	expect(html).not.toContain("inside the document");
+	expect(html).not.toContain("export const count");
 });

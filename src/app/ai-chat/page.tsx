@@ -24,7 +24,12 @@ import { ChevronDown, Square, Trash2, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chat, Message } from "#/lib/chat-storage";
 import type { ChatToolCall } from "#/lib/chat-stream";
-import { renderMarkdown } from "#/lib/markdown";
+import {
+	getChatArtifact,
+	renderChatMarkdown,
+	renderMarkdown,
+} from "#/lib/markdown";
+import { ArtifactCard, ArtifactLayout } from "./artifact";
 
 const toolLabels = new Map([
 	["webSearch", "Web search"],
@@ -71,6 +76,10 @@ export function ChatPane({
 	const { copy } = useClipboard({ announce: "Copied" });
 	const [canSpeak, setCanSpeak] = useState(false);
 	const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
+	const [artifactSelection, setArtifactSelection] = useState<{
+		messageId: string;
+		artifactId: number;
+	}>();
 	const currentUtterance = useRef<SpeechSynthesisUtterance | null>(null);
 	const chatLayout = useRef<HTMLDivElement>(null);
 	const scrollOnOpen = useCallback((node: HTMLDivElement | null) => {
@@ -79,6 +88,16 @@ export function ChatPane({
 	}, []);
 	const activeId = chat?.id;
 	const messages = chat?.messages ?? [];
+	const artifactSource = messages.find(
+		(message) => message.id === artifactSelection?.messageId,
+	)?.content;
+	const artifact = useMemo(
+		() =>
+			artifactSelection && artifactSource
+				? getChatArtifact(artifactSource, artifactSelection.artifactId)
+				: undefined,
+		[artifactSelection, artifactSource],
+	);
 
 	useEffect(() => {
 		setCanSpeak("speechSynthesis" in window);
@@ -91,6 +110,7 @@ export function ChatPane({
 		currentUtterance.current = null;
 		window.speechSynthesis?.cancel();
 		setSpeakingIndex(null);
+		setArtifactSelection(undefined);
 	}, [activeId]);
 
 	const copyText = useCallback(
@@ -137,7 +157,7 @@ export function ChatPane({
 		window.speechSynthesis.speak(utterance);
 	}
 
-	return (
+	const transcript = (
 		<ChatLayout
 			ref={scrollOnOpen}
 			className="h-full min-w-0"
@@ -342,6 +362,12 @@ export function ChatPane({
 											<MarkdownAnswer
 												content={message.content}
 												onCopy={copyText}
+												onOpenArtifact={(artifactId) =>
+													setArtifactSelection({
+														messageId: message.id,
+														artifactId,
+													})
+												}
 											/>
 										) : (
 											<Text
@@ -360,17 +386,41 @@ export function ChatPane({
 			)}
 		</ChatLayout>
 	);
+
+	return (
+		<ArtifactLayout
+			artifact={artifact}
+			documentContent={
+				artifact?.kind === "document" && (
+					<MarkdownAnswer content={artifact.content} onCopy={copyText} />
+				)
+			}
+			onClose={() => setArtifactSelection(undefined)}
+			onCopy={copyText}
+		>
+			{transcript}
+		</ArtifactLayout>
+	);
 }
 
 function MarkdownAnswer({
 	content,
 	onCopy,
+	onOpenArtifact,
 }: {
 	content: string;
 	onCopy: (value: string) => void;
+	onOpenArtifact?: (artifactId: number) => void;
 }) {
 	const answer = useRef<HTMLElement>(null);
-	const html = useMemo(() => renderMarkdown(content), [content]);
+	const canOpenArtifacts = !!onOpenArtifact;
+	const { html, artifacts } = useMemo(
+		() =>
+			canOpenArtifacts
+				? renderChatMarkdown(content)
+				: { html: renderMarkdown(content), artifacts: [] },
+		[content, canOpenArtifacts],
+	);
 
 	useEffect(() => {
 		const element = answer.current;
@@ -384,12 +434,25 @@ function MarkdownAnswer({
 		return () => element?.removeEventListener("click", copyCode);
 	}, [onCopy]);
 
-	return (
+	const article = (
 		<article
 			ref={answer}
 			className="genielm-markdown"
 			// biome-ignore lint/security/noDangerouslySetInnerHtml: The shared Markdown renderer escapes raw HTML and validates URLs.
 			dangerouslySetInnerHTML={{ __html: html }}
 		/>
+	);
+	if (!onOpenArtifact) return article;
+	return (
+		<VStack gap={2}>
+			{article}
+			{artifacts.map((artifact) => (
+				<ArtifactCard
+					key={artifact.id}
+					artifact={artifact}
+					onOpen={() => onOpenArtifact(artifact.id)}
+				/>
+			))}
+		</VStack>
 	);
 }

@@ -88,3 +88,32 @@ test("turns named Markdown and code fences into artifacts while keeping regular 
 	expect(html).not.toContain("inside the document");
 	expect(html).not.toContain("export const count");
 });
+
+test("marks Mermaid fences for chat previews and retains their source as artifacts", () => {
+	const source = "flowchart LR\n  A --> B\n";
+	const content = [
+		"Before",
+		"",
+		'```mermaid title="Workflow"',
+		source.trimEnd(),
+		"```",
+		"",
+		"After",
+	].join("\n");
+	const { html, artifacts, diagrams } = renderChatMarkdown(content);
+
+	expect(html).toContain('<figure data-genielm-mermaid="2">');
+	expect(html.indexOf("Before")).toBeLessThan(html.indexOf("<figure"));
+	expect(html.indexOf("</figure>")).toBeLessThan(html.indexOf("After"));
+	expect(artifacts).toEqual([
+		{
+			id: 2,
+			title: "Workflow",
+			kind: "code",
+			language: "mermaid",
+			content: source,
+		},
+	]);
+	expect(diagrams).toEqual(artifacts);
+	expect(renderMarkdown(content)).not.toContain("data-genielm-mermaid");
+});

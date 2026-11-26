@@ -20,6 +20,7 @@ import { Spinner } from "@astryxdesign/core/Spinner";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { useToast } from "@astryxdesign/core/Toast";
+import { useTheme } from "@astryxdesign/core/theme";
 import { ChevronDown, Square, Trash2, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Chat, Message } from "#/lib/chat-storage";
@@ -361,6 +362,7 @@ export function ChatPane({
 										{message.role === "assistant" ? (
 											<MarkdownAnswer
 												content={message.content}
+												isStreaming={isGenerating}
 												onCopy={copyText}
 												onOpenArtifact={(artifactId) =>
 													setArtifactSelection({
@@ -405,22 +407,40 @@ export function ChatPane({
 
 function MarkdownAnswer({
 	content,
+	isStreaming = false,
 	onCopy,
 	onOpenArtifact,
 }: {
 	content: string;
+	isStreaming?: boolean;
 	onCopy: (value: string) => void;
 	onOpenArtifact?: (artifactId: number) => void;
 }) {
 	const answer = useRef<HTMLElement>(null);
+	const { mode } = useTheme();
 	const canOpenArtifacts = !!onOpenArtifact;
-	const { html, artifacts } = useMemo(
+	const { html, artifacts, diagrams } = useMemo(
 		() =>
 			canOpenArtifacts
 				? renderChatMarkdown(content)
-				: { html: renderMarkdown(content), artifacts: [] },
+				: { html: renderMarkdown(content), artifacts: [], diagrams: [] },
 		[content, canOpenArtifacts],
 	);
+
+	useEffect(() => {
+		const article = answer.current;
+		if (!article || isStreaming || !diagrams.length) return;
+		const controller = new AbortController();
+		void import("#/lib/mermaid-preview").then(
+			({ renderMermaidPreviews }) => {
+				renderMermaidPreviews(article, diagrams, mode, controller.signal);
+			},
+			() => {
+				// The fallback source remains available if the renderer cannot load.
+			},
+		);
+		return () => controller.abort();
+	}, [diagrams, isStreaming, mode]);
 
 	useEffect(() => {
 		const element = answer.current;

@@ -56,6 +56,18 @@
 		cursor: pointer;
 	}
 
+	.genielm-markdown :where([data-genielm-mermaid]) {
+		margin: 0 0 var(--spacing-3);
+	}
+
+	.genielm-markdown :where([data-genielm-mermaid] > img) {
+		display: block;
+		max-inline-size: 100%;
+		max-block-size: 50dvh;
+		block-size: auto;
+		margin-inline: auto;
+	}
+
 	.genielm-markdown :where(table, .katex-display) {
 		display: block;
 		max-width: 100%;

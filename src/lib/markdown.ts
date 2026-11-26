@@ -25,6 +25,18 @@ markdown.core.ruler.after("block", "math_fence_alias", ({ tokens }) => {
 	}
 });
 
+const renderFence = markdown.renderer.rules.fence;
+markdown.renderer.rules.mermaid_preview = (
+	tokens,
+	index,
+	options,
+	env,
+	renderer,
+) => {
+	const source = renderFence?.(tokens, index, options, env, renderer) ?? "";
+	return `<figure data-genielm-mermaid="${tokens[index].map?.[0]}">${source}</figure>`;
+};
+
 export type ChatArtifact = {
 	id: number;
 	kind: "document" | "code";
@@ -40,6 +52,7 @@ export function renderMarkdown(content: string) {
 function parseChatMarkdown(content: string) {
 	const env = {};
 	const artifacts: ChatArtifact[] = [];
+	const diagrams: ChatArtifact[] = [];
 	const tokens = markdown.parse(content, env).filter((token) => {
 		if (token.type !== "fence" || !token.map || !token.content.trim())
 			return true;
@@ -52,29 +65,38 @@ function parseChatMarkdown(content: string) {
 		);
 		const title = (titleMatch?.[1] ?? titleMatch?.[2])?.trim().slice(0, 120);
 		const isDocument = language === "markdown" || language === "md";
-		artifacts.push({
+		const artifact: ChatArtifact = {
 			id: token.map[0],
 			kind: isDocument ? "document" : "code",
 			title:
 				title ||
 				(isDocument
 					? "Markdown document"
-					: `Code block ${artifacts.length + 1}`),
+					: language === "mermaid"
+						? "Mermaid diagram"
+						: `Code block ${artifacts.length + 1}`),
 			language,
 			content: token.content,
-		});
+		};
+		artifacts.push(artifact);
+		if (language === "mermaid") {
+			diagrams.push(artifact);
+			token.type = "mermaid_preview";
+			return true;
+		}
 
 		// A named top-level fence represents a standalone file.
 		return !title || token.level !== 0;
 	});
-	return { tokens, env, artifacts };
+	return { tokens, env, artifacts, diagrams };
 }
 
 export function renderChatMarkdown(content: string) {
-	const { tokens, env, artifacts } = parseChatMarkdown(content);
+	const { tokens, env, artifacts, diagrams } = parseChatMarkdown(content);
 	return {
 		html: markdown.renderer.render(tokens, markdown.options, env),
 		artifacts,
+		diagrams,
 	};
 }
 

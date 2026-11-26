@@ -20,6 +20,7 @@ import type { ChatArtifact } from "#/lib/markdown";
 
 function artifactType(artifact: ChatArtifact) {
 	if (artifact.kind === "document") return "Markdown document";
+	if (artifact.language === "mermaid") return "Mermaid source";
 	return artifact.language || "Plain text";
 }
 

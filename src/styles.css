@@ -50,9 +50,20 @@
 		border-radius: var(--radius-inner);
 	}
 
+	.genielm-markdown :where(pre.hljs) {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		column-gap: var(--spacing-3);
+		align-items: start;
+	}
+
+	.genielm-markdown :where(pre.hljs > code) {
+		grid-area: 1 / 1;
+		overflow-x: auto;
+	}
+
 	.genielm-markdown :where(.copy-code-holder) {
-		display: block;
-		text-align: end;
+		grid-area: 1 / 2;
 	}
 
 	.genielm-markdown :where(.copy-code) {

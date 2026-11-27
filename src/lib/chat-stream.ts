@@ -6,7 +6,8 @@ export type ChatToolCall = {
 
 export type ChatStreamEvent =
 	| { type: "reasoning-delta" | "text-delta"; text: string }
-	| { type: "tool-status"; call: ChatToolCall };
+	| { type: "tool-status"; call: ChatToolCall }
+	| { type: "model-info"; model: string };
 
 type ModelStreamPart = {
 	type: string;
@@ -16,6 +17,7 @@ type ModelStreamPart = {
 	toolName?: string;
 	output?: unknown;
 	preliminary?: boolean;
+	response?: { modelId?: string };
 };
 
 export function isChatToolCall(value: unknown): value is ChatToolCall {
@@ -32,6 +34,12 @@ export function isChatToolCall(value: unknown): value is ChatToolCall {
 }
 
 function toChatStreamEvent(part: ModelStreamPart): ChatStreamEvent | undefined {
+	if (part.type === "finish-step") {
+		const model = part.response?.modelId?.trim();
+		if (model) return { type: "model-info", model };
+		return;
+	}
+
 	if (part.type === "reasoning-delta" || part.type === "text-delta") {
 		if (typeof part.text === "string")
 			return { type: part.type, text: part.text };
@@ -99,13 +107,15 @@ function parseChatStreamEvent(line: string): ChatStreamEvent {
 	if (!event || typeof event !== "object")
 		throw new Error("Invalid chat stream event.");
 
-	const { type, text, call } = event as Record<string, unknown>;
+	const { type, text, call, model } = event as Record<string, unknown>;
 	if (
 		(type === "reasoning-delta" || type === "text-delta") &&
 		typeof text === "string"
 	)
 		return { type, text };
 	if (type === "tool-status" && isChatToolCall(call)) return { type, call };
+	if (type === "model-info" && typeof model === "string" && model.trim())
+		return { type, model };
 
 	throw new Error("Invalid chat stream event.");
 }

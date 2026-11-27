@@ -312,7 +312,7 @@ export function ChatPane({
 										metadata={
 											<ChatMessageMetadata
 												footer={
-													<HStack gap={0.5}>
+													<HStack gap={0.5} vAlign="center" wrap="wrap">
 														<Button
 															label="Copy message"
 															tooltip="Copy message"
@@ -360,6 +360,16 @@ export function ChatPane({
 																onDeleteMessage(index);
 															}}
 														/>
+														{message.role === "assistant" && message.model && (
+															<Text
+																type="supporting"
+																color="secondary"
+																maxLines={1}
+																className="ms-1 min-w-0"
+															>
+																{message.model}
+															</Text>
+														)}
 													</HStack>
 												}
 											/>

@@ -223,7 +223,11 @@ export function useConversations(
 							: [...calls, event.call];
 					} else if (event.type === "reasoning-delta") {
 						answer.reasoning = (answer.reasoning ?? "") + event.text;
+					} else if (event.type === "model-info") {
+						if (answer.model === event.model) return;
+						answer.model = event.model;
 					} else {
+						answer.model ??= selectedProvider.model;
 						answer.content += event.text;
 					}
 					updateAnswer();
@@ -231,6 +235,7 @@ export function useConversations(
 				if (!answer.content) throw new Error("Empty response");
 			} catch {
 				if (!answer.content) {
+					delete answer.model;
 					answer.content = signal.aborted
 						? "Response stopped."
 						: "Sorry, I could not reach the selected model. Please check your provider settings.";

@@ -4,6 +4,7 @@ export type Message = {
 	id: string;
 	role: "user" | "assistant";
 	content: string;
+	model?: string;
 	reasoning?: string;
 	toolCalls?: ChatToolCall[];
 };
@@ -51,6 +52,7 @@ function isMessage(value: unknown): value is StoredMessage {
 		(message.role === "user" || message.role === "assistant") &&
 		typeof message.content === "string" &&
 		(message.id === undefined || typeof message.id === "string") &&
+		(message.model === undefined || typeof message.model === "string") &&
 		(message.reasoning === undefined ||
 			typeof message.reasoning === "string") &&
 		(message.toolCalls === undefined ||

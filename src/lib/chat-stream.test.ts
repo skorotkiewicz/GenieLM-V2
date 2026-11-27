@@ -5,12 +5,13 @@ import {
 	readChatStream,
 } from "./chat-stream";
 
-test("streams reasoning and answer deltas separately", async () => {
+test("streams reasoning, answer text, and the provider's model ID separately", async () => {
 	async function* modelStream() {
 		yield { type: "reasoning-start" };
 		yield { type: "reasoning-delta", text: "Check " };
 		yield { type: "reasoning-delta", text: "the facts." };
 		yield { type: "text-delta", text: "The answer." };
+		yield { type: "finish-step", response: { modelId: "provider-model" } };
 		yield { type: "finish" };
 	}
 
@@ -25,6 +26,7 @@ test("streams reasoning and answer deltas separately", async () => {
 		{ type: "reasoning-delta", text: "Check " },
 		{ type: "reasoning-delta", text: "the facts." },
 		{ type: "text-delta", text: "The answer." },
+		{ type: "model-info", model: "provider-model" },
 	]);
 });
 

@@ -17,6 +17,7 @@ import { CodeXml, FileText } from "lucide-react";
 import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { ChatArtifact } from "#/lib/markdown";
 import { ArtifactCode } from "./artifact-code";
+import { CopyButton } from "./copy-button";
 
 function artifactType(artifact: ChatArtifact) {
 	if (artifact.kind === "document") return "Markdown document";
@@ -159,14 +160,12 @@ export function ArtifactLayout({
 	artifactKey,
 	documentContent,
 	onClose,
-	onCopy,
 }: {
 	children: ReactNode;
 	artifact: ChatArtifact | undefined;
 	artifactKey: string | undefined;
 	documentContent?: ReactNode;
 	onClose: () => void;
-	onCopy: (content: string) => Promise<void>;
 }) {
 	const container = useRef<HTMLDivElement>(null);
 	const [hasRoomForPanel, setHasRoomForPanel] = useState(false);
@@ -191,14 +190,10 @@ export function ArtifactLayout({
 	}, []);
 
 	const copyAction = artifact && (
-		<Button
+		<CopyButton
+			key={artifactKey}
 			label="Copy artifact"
-			tooltip="Copy artifact"
-			variant="ghost"
-			size="sm"
-			isIconOnly
-			icon={<Icon icon="copy" size="sm" />}
-			clickAction={() => onCopy(artifact.content)}
+			content={artifact.content}
 		/>
 	);
 	const isHtml = artifact?.language === "html";

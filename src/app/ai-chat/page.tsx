@@ -14,12 +14,11 @@ import {
 	ChatToolCalls,
 } from "@astryxdesign/core/Chat";
 import { Collapsible } from "@astryxdesign/core/Collapsible";
-import { useClipboard } from "@astryxdesign/core/hooks";
+import { useAnnounce, useClipboard } from "@astryxdesign/core/hooks";
 import { Icon } from "@astryxdesign/core/Icon";
 import { Spinner } from "@astryxdesign/core/Spinner";
 import { HStack, VStack } from "@astryxdesign/core/Stack";
 import { Heading, Text } from "@astryxdesign/core/Text";
-import { useToast } from "@astryxdesign/core/Toast";
 import { useTheme } from "@astryxdesign/core/theme";
 import { ChevronDown, Square, Trash2, Volume2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -33,6 +32,7 @@ import {
 } from "#/lib/markdown";
 import type { RenderedMermaid } from "#/lib/mermaid-preview";
 import { ArtifactCard, ArtifactLayout } from "./artifact";
+import { CopyButton } from "./copy-button";
 import { MermaidViewer } from "./mermaid-viewer";
 
 const toolLabels = new Map([
@@ -76,8 +76,6 @@ export function ChatPane({
 	onOpenProvider,
 	onDeleteMessage,
 }: ChatPaneProps) {
-	const showToast = useToast();
-	const { copy } = useClipboard({ announce: "Copied" });
 	const [canSpeak, setCanSpeak] = useState(false);
 	const [speakingIndex, setSpeakingIndex] = useState<number | null>(null);
 	const [artifactSelection, setArtifactSelection] = useState<{
@@ -116,17 +114,6 @@ export function ChatPane({
 		setSpeakingIndex(null);
 		setArtifactSelection(undefined);
 	}, [activeId]);
-
-	const copyText = useCallback(
-		async (content: string) => {
-			const copied = await copy(content);
-			showToast({
-				body: copied ? "Copied" : "Could not copy text",
-				uniqueID: "copy",
-			});
-		},
-		[copy, showToast],
-	);
 
 	function stopSpeaking() {
 		currentUtterance.current = null;
@@ -313,14 +300,9 @@ export function ChatPane({
 											<ChatMessageMetadata
 												footer={
 													<HStack gap={0.5} vAlign="center" wrap="wrap">
-														<Button
+														<CopyButton
 															label="Copy message"
-															tooltip="Copy message"
-															isIconOnly
-															size="sm"
-															variant="ghost"
-															icon={<Icon icon="copy" size="sm" />}
-															onClick={() => void copyText(message.content)}
+															content={message.content}
 														/>
 														<Button
 															label={
@@ -379,7 +361,6 @@ export function ChatPane({
 											<MarkdownAnswer
 												content={message.content}
 												isStreaming={isGenerating}
-												onCopy={copyText}
 												onOpenArtifact={(artifactId) =>
 													setArtifactSelection({
 														messageId: message.id,
@@ -414,11 +395,10 @@ export function ChatPane({
 			}
 			documentContent={
 				artifact?.kind === "document" && (
-					<MarkdownAnswer content={artifact.content} onCopy={copyText} />
+					<MarkdownAnswer content={artifact.content} />
 				)
 			}
 			onClose={() => setArtifactSelection(undefined)}
-			onCopy={copyText}
 		>
 			{transcript}
 		</ArtifactLayout>
@@ -428,15 +408,15 @@ export function ChatPane({
 function MarkdownAnswer({
 	content,
 	isStreaming = false,
-	onCopy,
 	onOpenArtifact,
 }: {
 	content: string;
 	isStreaming?: boolean;
-	onCopy: (value: string) => void;
 	onOpenArtifact?: (artifactId: number) => void;
 }) {
 	const answer = useRef<HTMLElement>(null);
+	const { copy } = useClipboard({ announce: "Copied" });
+	const announce = useAnnounce();
 	const [previews, setPreviews] = useState<
 		{
 			html: string;
@@ -455,6 +435,7 @@ function MarkdownAnswer({
 				: { html: renderMarkdown(content), artifacts: [], diagrams: [] },
 		[content, canOpenArtifacts],
 	);
+	const markup = useMemo(() => ({ __html: html }), [html]);
 
 	useEffect(() => {
 		const article = answer.current;
@@ -492,22 +473,46 @@ function MarkdownAnswer({
 
 	useEffect(() => {
 		const element = answer.current;
+		if (!element) return;
+		const resetTimers = new Map<HTMLButtonElement, number>();
+		let active = true;
+
 		function copyCode(event: MouseEvent) {
 			if (!(event.target instanceof Element)) return;
 			const button = event.target.closest<HTMLButtonElement>(".copy-code");
 			const code = button?.closest("pre")?.querySelector("code")?.textContent;
-			if (code != null) onCopy(code);
+			if (!button || code == null) return;
+			void copy(code).then((copied) => {
+				if (!active || !button.isConnected) return;
+				const feedback = copied ? "Copied" : "Copy failed";
+				button.textContent = feedback;
+				button.setAttribute("aria-label", feedback);
+				if (!copied) announce(feedback, "assertive");
+				window.clearTimeout(resetTimers.get(button));
+				resetTimers.set(
+					button,
+					window.setTimeout(() => {
+						button.textContent = "Copy";
+						button.setAttribute("aria-label", "Copy code");
+						resetTimers.delete(button);
+					}, 2000),
+				);
+			});
 		}
-		element?.addEventListener("click", copyCode);
-		return () => element?.removeEventListener("click", copyCode);
-	}, [onCopy]);
+		element.addEventListener("click", copyCode);
+		return () => {
+			active = false;
+			element.removeEventListener("click", copyCode);
+			for (const timer of resetTimers.values()) window.clearTimeout(timer);
+		};
+	}, [announce, copy]);
 
 	const article = (
 		<article
 			ref={answer}
 			className="genielm-markdown"
 			// biome-ignore lint/security/noDangerouslySetInnerHtml: The shared Markdown renderer escapes raw HTML and validates URLs.
-			dangerouslySetInnerHTML={{ __html: html }}
+			dangerouslySetInnerHTML={markup}
 		/>
 	);
 	if (!onOpenArtifact) return article;

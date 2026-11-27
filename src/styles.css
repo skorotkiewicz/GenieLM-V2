@@ -67,6 +67,8 @@
 	}
 
 	.genielm-markdown :where(.copy-code) {
+		min-inline-size: 6ch;
+		text-align: end;
 		color: var(--color-text-secondary);
 		cursor: pointer;
 	}

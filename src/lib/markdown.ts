@@ -64,29 +64,25 @@ function parseChatMarkdown(content: string) {
 			/(?:^|\s)title=(?:"([^"]+)"|'([^']+)')(?=\s|$)/i,
 		);
 		const title = (titleMatch?.[1] ?? titleMatch?.[2])?.trim().slice(0, 120);
+		const isDiagram = language === "mermaid";
+		if (!isDiagram && (!title || token.level !== 0)) return true;
+
 		const isDocument = language === "markdown" || language === "md";
 		const artifact: ChatArtifact = {
 			id: token.map[0],
 			kind: isDocument ? "document" : "code",
-			title:
-				title ||
-				(isDocument
-					? "Markdown document"
-					: language === "mermaid"
-						? "Mermaid diagram"
-						: `Code block ${artifacts.length + 1}`),
+			title: title || "Mermaid diagram",
 			language,
 			content: token.content,
 		};
 		artifacts.push(artifact);
-		if (language === "mermaid") {
+		if (isDiagram) {
 			diagrams.push(artifact);
 			token.type = "mermaid_preview";
 			return true;
 		}
 
-		// A named top-level fence represents a standalone file.
-		return !title || token.level !== 0;
+		return false;
 	});
 	return { tokens, env, artifacts, diagrams };
 }

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { renderChatMarkdown, renderMarkdown } from "./markdown";
+import { getChatArtifact, renderChatMarkdown, renderMarkdown } from "./markdown";
 
 test("renders GFM-style content without executing raw HTML", () => {
 	const html = renderMarkdown(
@@ -67,6 +67,14 @@ test("turns named Markdown and code fences into artifacts while keeping regular 
 		"const example = 42;",
 		"```",
 		"",
+		"```",
+		'NAME="Alpine Linux"',
+		"```",
+		"",
+		'> ```sh title="Nested example"',
+		"> echo nested",
+		"> ```",
+		"",
 		"```tex",
 		"E = mc^2",
 		"```",
@@ -77,16 +85,44 @@ test("turns named Markdown and code fences into artifacts while keeping regular 
 	expect(artifacts.map(({ title, kind }) => ({ title, kind }))).toEqual([
 		{ title: "Release notes", kind: "document" },
 		{ title: "index.ts", kind: "code" },
-		{ title: "Code block 3", kind: "code" },
 	]);
 	expect(artifacts[0].content).toContain("```js");
 	expect(artifacts[0].content).toContain("```tex");
 	expect(artifacts[1].content).toBe("export const count = 1;\n");
 	expect(html).toContain("Here are the release notes.");
 	expect(html).toContain("const</span> example");
+	expect(html).toContain("Alpine Linux");
+	expect(html).toContain("nested");
+	expect(getChatArtifact(response, artifacts[1].id)).toEqual(artifacts[1]);
 	expect(html).toContain("katex-block");
 	expect(html).not.toContain("inside the document");
 	expect(html).not.toContain("export const count");
+});
+
+test("promotes HTML to an artifact when the model titles the fence", () => {
+	const page = "<!doctype html>\n<h1>Artifact preview</h1>\n";
+	const content = [
+		'```html title="index.html"',
+		page.trimEnd(),
+		"```",
+		"",
+		"```html",
+		"<p>Inline example</p>",
+		"```",
+	].join("\n");
+	const { html, artifacts } = renderChatMarkdown(content);
+
+	expect(artifacts).toEqual([
+		{
+			id: 0,
+			title: "index.html",
+			kind: "code",
+			language: "html",
+			content: page,
+		},
+	]);
+	expect(html).not.toContain("Artifact preview");
+	expect(html).toContain("Inline example");
 });
 
 test("marks Mermaid fences for chat previews and retains their source as artifacts", () => {

@@ -11,15 +11,17 @@ import {
 } from "@astryxdesign/core/Layout";
 import { ResizeHandle, useResizable } from "@astryxdesign/core/Resizable";
 import { HStack, StackItem, VStack } from "@astryxdesign/core/Stack";
+import { Tab, TabList } from "@astryxdesign/core/TabList";
 import { Heading, Text } from "@astryxdesign/core/Text";
 import { useToast } from "@astryxdesign/core/Toast";
 import { observeResize } from "@astryxdesign/core/utils";
 import { CodeXml, FileText, Share } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import type { ChatArtifact } from "#/lib/markdown";
 
 function artifactType(artifact: ChatArtifact) {
 	if (artifact.kind === "document") return "Markdown document";
+	if (artifact.language === "html") return "HTML";
 	if (artifact.language === "mermaid") return "Mermaid source";
 	return artifact.language || "Plain text";
 }
@@ -63,6 +65,87 @@ export function ArtifactCard({
 				<Icon icon="chevronRight" size="sm" color="secondary" />
 			</HStack>
 		</ClickableCard>
+	);
+}
+
+function ArtifactCode({ artifact }: { artifact: ChatArtifact }) {
+	return (
+		<CodeBlock
+			code={artifact.content}
+			language={artifact.language || "plaintext"}
+			width="100%"
+			container="section"
+			hasLineNumbers
+			hasLanguageLabel={false}
+			hasCopyButton={false}
+		/>
+	);
+}
+
+const previewPolicy = [
+	"default-src 'none'",
+	"style-src 'unsafe-inline'",
+	"img-src data:",
+	"font-src data:",
+	"media-src data:",
+	"base-uri 'none'",
+	"form-action 'none'",
+].join("; ");
+
+function HtmlArtifact({ artifact }: { artifact: ChatArtifact }) {
+	const [view, setView] = useState("preview");
+	const id = useId();
+	const isPreview = view === "preview";
+	return (
+		<VStack height="100%" gap={2}>
+			<TabList
+				value={view}
+				onChange={setView}
+				role="tablist"
+				aria-label="HTML artifact view"
+				hasDivider
+				size="sm"
+			>
+				<Tab
+					id={`${id}-preview-tab`}
+					label="Preview"
+					value="preview"
+					panelId={`${id}-preview`}
+				/>
+				<Tab
+					id={`${id}-source-tab`}
+					label="Source"
+					value="source"
+					panelId={`${id}-source`}
+				/>
+			</TabList>
+			<section
+				id={`${id}-preview`}
+				role="tabpanel"
+				aria-labelledby={`${id}-preview-tab`}
+				hidden={!isPreview}
+				className="min-h-0 grow"
+			>
+				{isPreview && (
+					<iframe
+						title={`Preview of ${artifact.title}`}
+						className="block size-full border-0 bg-white scheme-light"
+						sandbox=""
+						referrerPolicy="no-referrer"
+						srcDoc={`<!doctype html>\n<meta http-equiv="Content-Security-Policy" content="${previewPolicy}">\n<meta name="referrer" content="no-referrer">\n${artifact.content}`}
+					/>
+				)}
+			</section>
+			<section
+				id={`${id}-source`}
+				role="tabpanel"
+				aria-labelledby={`${id}-source-tab`}
+				hidden={isPreview}
+				className="min-h-0 grow overflow-auto"
+			>
+				{!isPreview && <ArtifactCode artifact={artifact} />}
+			</section>
+		</VStack>
 	);
 }
 
@@ -145,20 +228,15 @@ export function ArtifactLayout({
 			/>
 		</HStack>
 	);
+	const isHtml = artifact?.language === "html";
 	const body = artifact && (
-		<LayoutContent padding={4}>
+		<LayoutContent padding={4} isScrollable={!isHtml}>
 			{artifact.kind === "document" ? (
 				documentContent
+			) : isHtml ? (
+				<HtmlArtifact artifact={artifact} />
 			) : (
-				<CodeBlock
-					code={artifact.content}
-					language={artifact.language || "plaintext"}
-					width="100%"
-					container="section"
-					hasLineNumbers
-					hasLanguageLabel={false}
-					hasCopyButton={false}
-				/>
+				<ArtifactCode artifact={artifact} />
 			)}
 		</LayoutContent>
 	);

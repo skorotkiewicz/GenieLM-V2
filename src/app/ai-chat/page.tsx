@@ -398,6 +398,10 @@ export function ChatPane({
 	return (
 		<ArtifactLayout
 			artifact={artifact}
+			artifactKey={
+				artifactSelection &&
+				`${artifactSelection.messageId}:${artifactSelection.artifactId}`
+			}
 			documentContent={
 				artifact?.kind === "document" && (
 					<MarkdownAnswer content={artifact.content} onCopy={copyText} />

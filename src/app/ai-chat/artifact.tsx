@@ -78,7 +78,7 @@ const previewPolicy = [
 ].join("; ");
 
 function HtmlArtifact({ artifact }: { artifact: ChatArtifact }) {
-	const [view, setView] = useState("preview");
+	const [view, setView] = useState("source");
 	const [enabledSource, setEnabledSource] = useState<string>();
 	const id = useId();
 	const isPreview = view === "preview";
@@ -99,16 +99,16 @@ function HtmlArtifact({ artifact }: { artifact: ChatArtifact }) {
 						size="sm"
 					>
 						<Tab
-							id={`${id}-preview-tab`}
-							label="Preview"
-							value="preview"
-							panelId={`${id}-preview`}
-						/>
-						<Tab
 							id={`${id}-source-tab`}
 							label="Source"
 							value="source"
 							panelId={`${id}-source`}
+						/>
+						<Tab
+							id={`${id}-preview-tab`}
+							label="Preview"
+							value="preview"
+							panelId={`${id}-preview`}
 						/>
 					</TabList>
 				</StackItem>
